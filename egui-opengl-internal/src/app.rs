@@ -41,6 +41,14 @@ pub struct OpenGLApp<T = ()> {
     hwnd: OnceCell<HWND>,
 }
 
+impl<T> Default for OpenGLApp<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
+
 impl<T> OpenGLApp<T> {
     /// Creates new [`OpenGLApp`] in const context. You are supposed to create a single static item to store the application state.
     pub const fn new() -> Self {
@@ -155,7 +163,7 @@ impl<T: Default> OpenGLApp<T> {
 
 impl<T> OpenGLApp<T> {
     /// Present call. Should be called once per original present call, before or inside of hook.
-    #[allow(clippy::cast_ref_to_mut)]
+    #[allow(invalid_reference_casting)]
     pub fn render(&self, hdc: HDC) {
         unsafe {
             let this = &mut *self.lock_data();

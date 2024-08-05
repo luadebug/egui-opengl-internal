@@ -41,7 +41,7 @@ pub fn get_module(module_name: &str) -> HMODULE {
             module
         } else {
             // this also shouldn't silently error
-            HMODULE(0 as *mut c_void)
+            HMODULE(std::ptr::null_mut::<c_void>())
         }
     }
 }

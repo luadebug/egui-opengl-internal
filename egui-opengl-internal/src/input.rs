@@ -350,9 +350,9 @@ fn get_key_modifiers(msg: u32) -> Modifiers {
 
 fn get_key(wparam: usize) -> Option<Key> {
     match wparam {
-        0x30..=0x39 => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x10)) }, // 0-9
-        0x41..=0x5A => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x17)) }, // A-Z
-        0x70..=0x83 => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x2C)) }, // F1-F20
+        0x30..=0x39 => unsafe { Some(std::mem::transmute::<u8, Key>(wparam as u8 - 0x10)) }, // 0-9
+        0x41..=0x5A => unsafe { Some(std::mem::transmute::<u8, Key>(wparam as u8 - 0x17)) }, // A-Z
+        0x70..=0x83 => unsafe { Some(std::mem::transmute::<u8, Key>(wparam as u8 - 0x2C)) }, // F1-F20
         _ => match VIRTUAL_KEY(wparam as u16) {
             VK_DOWN => Some(Key::ArrowDown),
             VK_LEFT => Some(Key::ArrowLeft),
