@@ -14,7 +14,6 @@ default-target = "x86_64-pc-windows-msvc"
 targets = ["i686-pc-windows-msvc", "x86_64-pc-windows-msvc"]
 
 [dependencies]
-#egui = "0.27.2"
 egui = "0.28.1"
 gl = "0.14.0"
 spin = { version = "0.9.8", optional = true, features = ["lock_api"] }
