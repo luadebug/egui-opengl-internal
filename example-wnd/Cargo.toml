@@ -1,0 +1,35 @@
+[package]
+name = "example-wnd"
+version = "0.1.0"
+edition = "2021"
+authors = ["floob", "sy1ntexx", "unknowntrojan"]
+description = "Example opengl dll for egui d3d11 showcase."
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+#egui = "0.27.2"
+egui = "0.28.1"
+image = { version = "0.25.2", features = ["jpeg"] }
+retour = { version = "0.3.1", features = ["static-detour"] }
+once_cell = "1.19.0"
+
+[dependencies.egui_extras]
+#version = "0.27.2"
+version = "0.28.1"
+features = ["image"]
+
+[dependencies.egui-opengl-internal]
+path = "../egui-opengl-internal"
+features = ["force-compile", "save-blob", "parking-lot"]
+
+[dependencies.windows]
+version = "0.58.0"
+features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+]
