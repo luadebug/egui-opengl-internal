@@ -4,4 +4,4 @@ Rust OpenGL backend for [egui](https://github.com/emilk/egui) using opengl inter
 It uses [GetProcAddress](https://docs.rs/winapi/latest/winapi/um/libloaderapi/fn.GetProcAddress.html) and [wglGetProcAddress](https://docs.rs/winapi/latest/winapi/um/wingdi/fn.wglGetProcAddress.html) to load [gl-rs](https://github.com/brendanzab/gl-rs/) functions with [gl::load_with](https://docs.rs/gl/0.14.0/gl/fn.load_with.html).
 
 #
-![](media/demo.gif)
+![](media/PreviewEGUI.png)
