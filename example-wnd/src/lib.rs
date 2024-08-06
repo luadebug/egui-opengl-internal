@@ -50,9 +50,7 @@ extern "system" fn DllMain(hinst: usize, reason: u32, _reserved: *mut c_void) ->
         unsafe {
             WglSwapBuffersHook.disable().unwrap();
             let wnd_proc = OLD_WND_PROC.unwrap().unwrap();
-            let _: Option<WNDPROC> = Some(transmute::<i32,
-                                    Option<unsafe extern "system"
-                                    fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
+            let _: Option<WNDPROC> = Some(transmute(
                                     SetWindowLongPtrW(
                 APP.get_window(),
                 GWLP_WNDPROC,
@@ -86,8 +84,7 @@ fn hk_wgl_swap_buffers(hdc: HDC) -> HRESULT {
 
             APP.init_default(hdc, window, ui);
 
-            OLD_WND_PROC = Some(transmute::<i32, Option<unsafe extern "system"
-                    fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
+            OLD_WND_PROC = Some(transmute(
                     SetWindowLongPtrW(
                 window,
                 GWLP_WNDPROC,

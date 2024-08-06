@@ -1,11 +1,10 @@
-use std::ffi::{c_void, OsString};
+use std::ffi::c_void;
 use crate::{input::InputCollector, painter, utils};
 use clipboard::{windows_clipboard::WindowsClipboardContext, ClipboardProvider};
-use egui::{Context, FontData, FontDefinitions, FontFamily, FontId};
+use egui::{Context, FontData, FontDefinitions, FontId};
 use once_cell::sync::OnceCell;
 use std::ops::DerefMut;
 use std::path::PathBuf;
-use std::sync::Arc;
 use egui::FontFamily::Proportional;
 use egui::TextStyle::{Body, Button, Heading, Monospace, Name, Small};
 use windows::Win32::{
@@ -35,8 +34,7 @@ use parking_lot::{Mutex, MutexGuard};
 use spin::lock_api::{Mutex, MutexGuard};
 
 use lock_api::MappedMutexGuard;
-use windows::Win32::Foundation::HINSTANCE;
-use windows::Win32::UI::WindowsAndMessaging::{WM_CHAR, WM_UNICHAR};
+
 
 /// Heart and soul of this integration.
 /// Main methods you are going to use are:
