@@ -11,7 +11,7 @@ use windows::Win32::{
             VK_RIGHT, VK_SPACE, VK_TAB, VK_UP,
         },
         WindowsAndMessaging::{
-            GetClientRect, KF_REPEAT, WHEEL_DELTA, WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
+            GetClientRect, KF_REPEAT, WHEEL_DELTA, WM_CHAR, WM_UNICHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
             WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP,
             WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN,
             WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_XBUTTONDBLCLK, WM_XBUTTONDOWN,
@@ -165,10 +165,37 @@ impl InputCollector {
                 });
                 InputResult::MouseMiddle
             }
+            WM_UNICHAR => {
+                // Handle Unicode characters from WM_UNICHAR
+                let unicode_char = wparam as u32; // wparam is the Unicode character
+
+                // Debugging output
+                println!("WM_UNICHAR received: unicode_char = {}", unicode_char);
+
+                if unicode_char != 0xFFFF { // 0xFFFF indicates no character
+                    if let Some(ch) = char::from_u32(unicode_char) {
+                        // Print the character representation
+                        println!("Character from WM_UNICHAR: '{}'", ch);
+                        if !ch.is_control() {
+                            self.events.push(Event::Text(ch.into())); // Add the character to events
+                        }
+                    } else {
+                        println!("Invalid character for unicode_char: {}", unicode_char);
+                    }
+                }
+                InputResult::Character
+            }
+
             WM_CHAR => {
-                if let Some(ch) = char::from_u32(wparam as _) {
-                    if !ch.is_control() {
-                        self.events.push(Event::Text(ch.into()));
+                // Handle characters from WM_CHAR
+                let unicode_char = wparam as u32; // wparam is the character code
+                if unicode_char != 0xFFFF { // 0xFFFF indicates no character
+                    if let Some(ch) = char::from_u32(unicode_char) {
+                        if !ch.is_control() {
+                            self.events.push(Event::Text(ch.into())); // Add the character to events
+                        }
+                    } else {
+                        println!("Invalid character for unicode_char: {}", unicode_char);
                     }
                 }
                 InputResult::Character

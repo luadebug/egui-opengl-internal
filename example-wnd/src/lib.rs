@@ -1,24 +1,27 @@
-use egui::{Color32, Context, Key, Modifiers, RichText, ScrollArea, Slider, Widget};
-use egui_opengl_internal::{utils, OpenGLApp};
-use retour::static_detour;
 use std::{intrinsics::transmute, sync::Once};
 use std::ffi::c_void;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
+
+use egui::{Color32, Context, Key, Modifiers, RichText, ScrollArea, Slider, Widget};
+use once_cell::unsync::Lazy;
+use retour::static_detour;
 use windows::{
     core::HRESULT,
     Win32::{
         Foundation::{HWND, LPARAM, LRESULT, WPARAM},
-        Graphics::Gdi::{WindowFromDC, HDC},
-        UI::WindowsAndMessaging::{CallWindowProcW, SetWindowLongPtrA, GWLP_WNDPROC, WNDPROC},
+        Graphics::Gdi::{HDC, WindowFromDC},
+        UI::WindowsAndMessaging::{CallWindowProcW, GWLP_WNDPROC, WNDPROC},
     },
 };
 use windows::Win32::Foundation::{BOOL, TRUE};
+use windows::Win32::UI::WindowsAndMessaging::SetWindowLongPtrW;
 
-use std::sync::{Arc, Mutex};
-use once_cell::unsync::Lazy;
+use egui_opengl_internal::{OpenGLApp, utils};
 
 struct UIState {
     ui_check: bool,
-    text: Option<String>,
+    text: String,
     value: f32,
     color: [f32; 3],
 }
@@ -27,7 +30,7 @@ impl UIState {
     fn new() -> Self {
         Self {
             ui_check: true,
-            text: Some(String::from("Test")),
+            text: String::from("Test"),
             value: 0.0,
             color: [0.0, 0.0, 0.0],
         }
@@ -50,7 +53,7 @@ extern "system" fn DllMain(hinst: usize, reason: u32, _reserved: *mut c_void) ->
             let _: Option<WNDPROC> = Some(transmute::<i32,
                                     Option<unsafe extern "system"
                                     fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
-                                    SetWindowLongPtrA(
+                                    SetWindowLongPtrW(
                 APP.get_window(),
                 GWLP_WNDPROC,
                 wnd_proc as usize as _,
@@ -85,7 +88,7 @@ fn hk_wgl_swap_buffers(hdc: HDC) -> HRESULT {
 
             OLD_WND_PROC = Some(transmute::<i32, Option<unsafe extern "system"
                     fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
-                    SetWindowLongPtrA(
+                    SetWindowLongPtrW(
                 window,
                 GWLP_WNDPROC,
                 hk_wnd_proc as usize as _,
@@ -93,7 +96,7 @@ fn hk_wgl_swap_buffers(hdc: HDC) -> HRESULT {
         });
 
         if !APP.get_window().eq(&window) {
-            SetWindowLongPtrA(window, GWLP_WNDPROC, hk_wnd_proc as usize as _);
+            SetWindowLongPtrW(window, GWLP_WNDPROC, hk_wnd_proc as usize as _);
         }
 
         APP.render(hdc);
@@ -137,7 +140,7 @@ unsafe fn main_thread(_hinst: usize) {
     utils::alloc_console();
 
     let wgl_swap_buffers = utils::get_proc_address("wglSwapBuffers");
-    let fn_wgl_swap_buffers: FnWglSwapBuffers = std::mem::transmute(wgl_swap_buffers);
+    let fn_wgl_swap_buffers: FnWglSwapBuffers = transmute(wgl_swap_buffers);
 
     println!("wglSwapBuffers: {:X}", wgl_swap_buffers as usize);
 
@@ -153,7 +156,7 @@ unsafe fn main_thread(_hinst: usize) {
 }
 
 unsafe fn test_ui(ctx: &Context, ui: &mut egui::Ui) {
-    let mut state = STATE.lock().unwrap(); // Lock the state
+    let state = STATE.as_ref();
 
     // UI Elements
     ui.label(RichText::new("Test").color(Color32::LIGHT_BLUE));
@@ -178,8 +181,15 @@ unsafe fn test_ui(ctx: &Context, ui: &mut egui::Ui) {
     }
 
     // Checkbox and Text Input
-    ui.checkbox(&mut state.ui_check, "Some checkbox");
-    ui.text_edit_singleline(state.text.as_mut().unwrap());
+    let mut binding = state.lock().unwrap();
+    let ui_state = binding.deref_mut();
+    if ui.checkbox(&mut ui_state.ui_check, "Some checkbox").changed() {
+        println!("Checkbox toggled to: {}", ui_state.ui_check);
+    }
+    if ui.text_edit_singleline(&mut ui_state.text).changed()
+    {
+        println!("Set edit singleline to: {}", ui_state.text);
+    }
 
     // Scroll Area
     ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
@@ -189,10 +199,16 @@ unsafe fn test_ui(ctx: &Context, ui: &mut egui::Ui) {
     });
 
     // Slider
-    Slider::new(&mut state.value, -1.0..=1.0).ui(ui);
+    if Slider::new(&mut ui_state.value, -1.0..=1.0).ui(ui).changed()
+    {
+        println!("Slider set value to: {}", ui_state.value);
+    }
 
     // Color Picker
-    ui.color_edit_button_rgb(&mut state.color);
+    if ui.color_edit_button_rgb(&mut ui_state.color).changed()
+    {
+        println!("Color edit button set color to: {:?}", ui_state.color);
+    }
 
     // Display Pointer Info
     ui.label(format!(

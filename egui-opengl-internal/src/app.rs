@@ -1,9 +1,13 @@
-use std::ffi::c_void;
+use std::ffi::{c_void, OsString};
 use crate::{input::InputCollector, painter, utils};
 use clipboard::{windows_clipboard::WindowsClipboardContext, ClipboardProvider};
-use egui::Context;
+use egui::{Context, FontData, FontDefinitions, FontFamily, FontId};
 use once_cell::sync::OnceCell;
 use std::ops::DerefMut;
+use std::path::PathBuf;
+use std::sync::Arc;
+use egui::FontFamily::Proportional;
+use egui::TextStyle::{Body, Button, Heading, Monospace, Name, Small};
 use windows::Win32::{
     Foundation::{HWND, LPARAM, RECT, WPARAM},
     Graphics::{
@@ -31,6 +35,8 @@ use parking_lot::{Mutex, MutexGuard};
 use spin::lock_api::{Mutex, MutexGuard};
 
 use lock_api::MappedMutexGuard;
+use windows::Win32::Foundation::HINSTANCE;
+use windows::Win32::UI::WindowsAndMessaging::{WM_CHAR, WM_UNICHAR};
 
 /// Heart and soul of this integration.
 /// Main methods you are going to use are:
@@ -157,7 +163,41 @@ impl<T: Default> OpenGLApp<T> {
     /// Initializes application and sets the state to its default value. You should call this only once!
     #[inline]
     pub fn init_default(&self, hdc: HDC, window: HWND, ui: impl FnMut(&Context, &mut T) + 'static) {
-        self.init_with_state_context(hdc, window, ui, T::default(), Context::default());
+        let ctx = Context::default();
+
+        let font_file = {
+            let mut font_path = PathBuf::from(std::env::var("SystemRoot").ok().unwrap());
+            font_path.push("Fonts");
+            font_path.push("arial.ttf");
+            font_path.to_str().unwrap().to_string().replace("\\", "/")
+        };
+        let font_name = font_file.split('/').last().unwrap().split('.').next().unwrap().to_string();
+        let font_file_bytes = std::fs::read(font_file).ok().unwrap();
+
+        let font_data = FontData::from_owned(font_file_bytes);
+        let mut font_def = FontDefinitions::default();
+        font_def.font_data.insert(font_name.to_string(), font_data);
+
+        let font_family = Proportional;
+        font_def.families.get_mut(&font_family).unwrap().insert(0, font_name);
+
+        ctx.set_fonts(font_def);
+
+
+        // Set custom sizes for text styles
+        let mut style = (*ctx.style()).clone();
+        style.text_styles = [
+            (Heading, FontId::new(30.0, Proportional)),
+            (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+            (Name("Context".into()), FontId::new(23.0, Proportional)),
+            (Body, FontId::new(18.0, Proportional)),
+            (Monospace, FontId::new(14.0, Proportional)),
+            (Button, FontId::new(14.0, Proportional)),
+            (Small, FontId::new(10.0, Proportional)),
+        ].into();
+
+        ctx.set_style(style);
+        self.init_with_state_context(hdc, window, ui, T::default(), ctx);
     }
 }
 
@@ -212,11 +252,16 @@ impl<T> OpenGLApp<T> {
     #[inline]
     pub fn wnd_proc(&self, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
         let this = &mut *self.lock_data();
+
+
+
         this.input_collector.process(umsg, wparam.0, lparam.0);
 
         if umsg == WM_SIZE {
             this.client_rect = self.get_client_rect(this.window);
         }
+
+
 
         this.ctx.wants_keyboard_input() || this.ctx.wants_pointer_input()
     }
